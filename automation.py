@@ -5,7 +5,7 @@ from github import Github
 from datetime import datetime
 from dotenv import load_dotenv
 
-# Load environment variables
+# ladda env variabler api nycklar etc
 load_dotenv()
 
 ACCESS_TOKEN = os.getenv("LINKEDIN_ACCESS_TOKEN")
@@ -13,7 +13,7 @@ ORG_URN = os.getenv("LINKEDIN_ORG_URN")
 GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")
 GITHUB_REPO = os.getenv("GITHUB_REPO")
 
-# === STEP 1: Hämta inlägg från LinkedIn ===
+# === steg 1: Hämta inlägg från LinkedIn ===
 def fetch_linkedin_posts():
     headers = {"Authorization": f"Bearer {ACCESS_TOKEN}"}
     url = f"https://api.linkedin.com/v2/ugcPosts?q=authors&authors=List({ORG_URN})"
@@ -42,17 +42,31 @@ def fetch_linkedin_posts():
     return posts
 
 
-# === STEP 2: Spara som JSON ===
+# === steg 2: Spara som JSON ===
 def save_json(posts, filename="news.json"):
     with open(filename, "w", encoding="utf-8") as f:
         json.dump(posts, f, ensure_ascii=False, indent=2)
     print(f"✅ Sparade {len(posts)} poster till {filename}")
 
 
-# === STEP 3: Ladda upp till GitHub ===
+# === steg 3: Ladda upp till GitHub ===
 def upload_to_github(filepath):
     g = Github(GITHUB_TOKEN)
     repo = g.get_repo(GITHUB_REPO)
 
-    with
+    with open(filepath, "r", encoding="utf-8") as f:
+        content = f.read()
 
+    try:
+        file = repo.get_contents("news.json")
+        repo.update_file(file.path, "Update news.json", content, file.sha, branch="main")
+        print("✅ news.json uppdaterad på GitHub")
+    except Exception:
+        repo.create_file("news.json", "Create news.json", content, branch="main")
+        print("✅ news.json skapad på GitHub")
+
+
+if __name__ == "__main__":
+    posts = fetch_linkedin_posts()
+    save_json(posts)
+    upload_to_github("news.json")
