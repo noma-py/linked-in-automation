@@ -46,7 +46,7 @@ def fetch_linkedin_posts():
 def save_json(posts, filename="news.json"):
     with open(filename, "w", encoding="utf-8") as f:
         json.dump(posts, f, ensure_ascii=False, indent=2)
-    print(f"✅ Sparade {len(posts)} poster till {filename}")
+    print(f"Sparade {len(posts)} poster till {filename}")
 
 
 # === steg 3: Ladda upp till GitHub ===
@@ -60,10 +60,10 @@ def upload_to_github(filepath):
     try:
         file = repo.get_contents("news.json")
         repo.update_file(file.path, "Update news.json", content, file.sha, branch="main")
-        print("✅ news.json uppdaterad på GitHub")
+        print("news.json uppdaterad på GitHub")
     except Exception:
         repo.create_file("news.json", "Create news.json", content, branch="main")
-        print("✅ news.json skapad på GitHub")
+        print("news.json skapad på GitHub")
 
 
 if __name__ == "__main__":
