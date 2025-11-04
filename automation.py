@@ -1,25 +1,58 @@
+import os
+import json
 import requests
+from github import Github
+from datetime import datetime
+from dotenv import load_dotenv
 
-ACCESS_TOKEN = "linkedin_access_token"
-ORG_ID = "urn:li:organization:123456789"
+# Load environment variables
+load_dotenv()
 
-headers = {"Authorization": f"Bearer {ACCESS_TOKEN}"}
+ACCESS_TOKEN = os.getenv("LINKEDIN_ACCESS_TOKEN")
+ORG_URN = os.getenv("LINKEDIN_ORG_URN")
+GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")
+GITHUB_REPO = os.getenv("GITHUB_REPO")
 
-url = f"https://api.linkedin.com/v2/ugcPosts?q=authors&authors=List({ORG_ID})"
-res = requests.get(url, headers=headers)
-posts = res.json()["elements"]
+# === STEP 1: Hämta inlägg från LinkedIn ===
+def fetch_linkedin_posts():
+    headers = {"Authorization": f"Bearer {ACCESS_TOKEN}"}
+    url = f"https://api.linkedin.com/v2/ugcPosts?q=authors&authors=List({ORG_URN})"
+    res = requests.get(url, headers=headers)
+    res.raise_for_status()
+    data = res.json()
+    posts = []
 
-news = []
-for p in posts:
-    content = p["specificContent"]["com.linkedin.ugc.ShareContent"]
-    text = content["shareCommentary"]["text"]
-    image = ""
-    if "media" in content:
-        image = content["media"][0].get("originalUrl", "")
-    news.append({
-        "text": text,
-        "image": image,
-        "date": p["created"]["time"]
-    })
+    for p in data.get("elements", []):
+        content = p.get("specificContent", {}).get("com.linkedin.ugc.ShareContent", {})
+        text = content.get("shareCommentary", {}).get("text", "")
+        media_url = ""
+        if "media" in content and content["media"]:
+            media_url = content["media"][0].get("originalUrl", "")
 
-print(news)
+        post = {
+            "text": text.strip(),
+            "image": media_url,
+            "created": datetime.utcfromtimestamp(
+                p["created"]["time"] / 1000
+            ).strftime("%Y-%m-%d"),
+            "link": f"https://www.linkedin.com/feed/update/{p['id'].split(':')[-1]}"
+        }
+        posts.append(post)
+
+    return posts
+
+
+# === STEP 2: Spara som JSON ===
+def save_json(posts, filename="news.json"):
+    with open(filename, "w", encoding="utf-8") as f:
+        json.dump(posts, f, ensure_ascii=False, indent=2)
+    print(f"✅ Sparade {len(posts)} poster till {filename}")
+
+
+# === STEP 3: Ladda upp till GitHub ===
+def upload_to_github(filepath):
+    g = Github(GITHUB_TOKEN)
+    repo = g.get_repo(GITHUB_REPO)
+
+    with
+
